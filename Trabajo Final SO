@@ -1,0 +1,77 @@
+#!/bin/bash
+
+# Funciones
+function respaldo_directorio() {
+    echo -e "\n\033[1;34m--- Respaldo de Directorio ---\033[0m"
+    read -p "Ingrese el directorio a respaldar: " directorio
+    read -p "Ingrese el destino del archivo comprimido (ej. backup.tar.gz): " destino
+
+    if [ -d "$directorio" ]; then
+        tar -czf "$destino" -C "$(dirname "$directorio")" "$(basename "$directorio")"
+        echo -e "\033[1;32mBackup realizado exitosamente.\033[0m"
+        
+        # Eliminar backups antiguos (más de 7 días)
+        find "$(dirname "$destino")" -type f -name "*.tar.gz" -mtime +7 -exec rm {} \;
+        echo -e "\033[1;33mBackups antiguos eliminados.\033[0m"
+    else
+        echo -e "\033[1;31mEl directorio no existe.\033[0m"
+    fi
+}
+
+function informe_sistema() {
+    echo -e "\n\033[1;34m--- Informe del Sistema ---\033[0m"
+    {
+        echo "Uso de CPU:"
+        top -bn1 | grep "Cpu(s)" || echo "No se pudo obtener el uso de CPU."
+        
+        echo -e "\nUso de Memoria:"
+        free -h || echo "No se pudo obtener el uso de memoria."
+        
+        echo -e "\nUso de Disco:"
+        df -h || echo "No se pudo obtener el uso de disco."
+    } > informe_sistema.log
+    echo -e "\033[1;32mInforme guardado en informe_sistema.log.\033[0m"
+}
+
+function crear_usuario() {
+    echo -e "\n\033[1;34m--- Crear Usuario ---\033[0m"
+    echo "Esta función crea un nuevo usuario en el sistema."
+    echo "Por favor, asegúrate de tener permisos de administrador."
+
+    read -p "Ingrese el nombre del nuevo usuario: " nombre
+
+    # Intenta crear el usuario con useradd, funciona en la mayoría de los sistemas Linux
+    if command -v useradd &> /dev/null; then
+        sudo useradd -m "$nombre" && echo -e "\033[1;32mUsuario '$nombre' creado exitosamente.\033[0m"
+        echo -n "¿Desea asignar una contraseña al usuario? (s/n): "
+        read respuesta
+        if [[ "$respuesta" == "s" ]]; then
+            sudo passwd "$nombre"
+            echo -e "\033[1;32mContraseña asignada al usuario '$nombre'.\033[0m"
+        fi
+    else
+        echo -e "\033[1;31mNo se puede crear un usuario en este sistema o no se tiene el comando 'useradd'.\033[0m"
+    fi
+}
+
+# Menú
+while true; do
+    clear
+    echo -e "\033[1;36m--- Menú Principal ---\033[0m"
+    echo "1) Respaldo de Directorio"
+    echo "2) Informe del Sistema"
+    echo "3) Crear Usuario"
+    echo "4) Salir"
+    
+    read -p "Seleccione una opción: " opcion
+    
+    case $opcion in
+        1) respaldo_directorio ;;
+        2) informe_sistema ;;
+        3) crear_usuario ;;
+        4) echo -e "\033[1;31mSaliendo...\033[0m" && exit 0 ;;
+        *) echo -e "\033[1;31mOpción no válida. Intente de nuevo.\033[0m" ;;
+    esac
+    
+    read -p "Presione Enter para continuar..."
+done
